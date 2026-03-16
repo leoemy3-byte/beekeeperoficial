@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: uid
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required)
+    //   - role: string (required, 'admin' or 'operator')
+    //   - createdAt: timestamp
+    //
+    // Collection: products
+    // Document ID: auto
+    // Fields:
+    //   - name: string (required)
+    //   - sku: string (required)
+    //   - stock: number (required)
+    //   - minStock: number (required)
+    //   - category, supplier, location, barcode, notes: string (optional)
+    //   - cost, price: number (optional)
+    //   - createdAt, updatedAt: timestamp
+    //
+    // Collection: movements
+    // Document ID: auto
+    // Fields:
+    //   - productId: string (required)
+    //   - productName: string (required)
+    //   - type: string (required, 'in', 'out', 'adjust')
+    //   - quantity: number (required)
+    //   - reason: string (optional)
+    //   - userEmail: string (required)
+    //   - userName: string (required)
+    //   - date: timestamp (required)
+    //   - notes: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "leoemy3@gmail.com" && request.auth.token.email_verified == true)
+      );
+    }
+
+    function isOperator() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'operator';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['admin', 'operator'];
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'sku', 'stock', 'minStock']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.sku is string && data.sku.size() > 0 && data.sku.size() < 100 &&
+             data.stock is number && data.stock >= 0 &&
+             data.minStock is number && data.minStock >= 0;
+    }
+
+    function isValidMovement(data) {
+      return data.keys().hasAll(['productId', 'productName', 'type', 'quantity', 'userEmail', 'date']) &&
+             data.productId is string && data.productId.size() > 0 &&
+             data.productName is string && data.productName.size() > 0 && data.productName.size() < 200 &&
+             data.type in ['in', 'out', 'adjust'] &&
+             data.quantity is number && data.quantity > 0 &&
+             data.userEmail is string && data.userEmail.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.date is string;
+    }
+
+    // Rules
+    match /users/{userId} {
+      // Any authenticated user can read users (needed for display names, etc.)
+      allow read: if isAuthenticated();
+      // Only admins can create or update users
+      // BUT we allow self-creation for new users (operators by default, or the primary admin email)
+      allow create: if (isAdmin() || (isOwner(userId) && (request.resource.data.role == 'operator' || request.auth.token.email == 'leoemy3@gmail.com'))) && isValidUser(request.resource.data);
+      allow update, delete: if isAdmin() && isValidUser(request.resource.data);
+    }
+
+    match /products/{productId} {
+      // All authenticated users can read products
+      allow read: if isAuthenticated();
+      // All authenticated users can create/update products (operators need to update stock)
+      allow create: if isAuthenticated() && isValidProduct(request.resource.data);
+      allow update: if isAuthenticated() && isValidProduct(request.resource.data);
+      // Only admins can delete products
+      allow delete: if isAdmin();
+    }
+
+    match /movements/{movementId} {
+      // All authenticated users can read history
+      allow read: if isAuthenticated();
+      // All authenticated users can create movements
+      allow create: if isAuthenticated() && isValidMovement(request.resource.data);
+      // NO ONE can update or delete movements (immutable history)
+      allow update, delete: if false;
+    }
+  }
+}

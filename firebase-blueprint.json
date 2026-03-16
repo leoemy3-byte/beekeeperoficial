@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the inventory system.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "role": { "type": "string", "enum": ["admin", "operator"], "description": "User role" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "An item in the inventory.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Product name" },
+        "sku": { "type": "string", "description": "Stock Keeping Unit" },
+        "category": { "type": "string", "description": "Category" },
+        "supplier": { "type": "string", "description": "Supplier name" },
+        "cost": { "type": "number", "description": "Cost price" },
+        "price": { "type": "number", "description": "Selling price" },
+        "stock": { "type": "number", "description": "Current stock quantity" },
+        "minStock": { "type": "number", "description": "Minimum stock level" },
+        "location": { "type": "string", "description": "Storage location" },
+        "barcode": { "type": "string", "description": "Barcode" },
+        "notes": { "type": "string", "description": "Additional notes" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last update timestamp" }
+      },
+      "required": ["name", "sku", "stock", "minStock"]
+    },
+    "Movement": {
+      "title": "Movement",
+      "description": "A record of stock movement (in, out, adjust).",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "description": "Reference to Product ID" },
+        "productName": { "type": "string", "description": "Product name at the time of movement" },
+        "type": { "type": "string", "enum": ["in", "out", "adjust"], "description": "Type of movement" },
+        "quantity": { "type": "number", "description": "Quantity moved" },
+        "reason": { "type": "string", "description": "Reason for movement" },
+        "userEmail": { "type": "string", "format": "email", "description": "User who made the movement" },
+        "userName": { "type": "string", "description": "Name of the user" },
+        "date": { "type": "string", "format": "date-time", "description": "Date and time of movement" },
+        "notes": { "type": "string", "description": "Additional notes" }
+      },
+      "required": ["productId", "productName", "type", "quantity", "userEmail", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles and roles."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Stores inventory products."
+    },
+    "/movements/{movementId}": {
+      "schema": { "$ref": "#/entities/Movement" },
+      "description": "Stores immutable history of stock movements."
+    }
+  }
+}
