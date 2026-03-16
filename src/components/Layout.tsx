@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { 
   LayoutDashboard, 
   Package, 
@@ -12,12 +13,15 @@ import {
   Hexagon,
   Menu,
   X,
-  Download
+  Download,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -62,7 +66,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0A0A0A] text-gray-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-main text-main font-sans overflow-hidden">
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
@@ -77,8 +81,8 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-[#141414] border-r border-yellow-500/10 flex flex-col transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="p-6 flex items-center justify-between border-b border-yellow-500/10">
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-theme flex flex-col transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        <div className="p-6 flex items-center justify-between border-b border-theme">
           <div className="flex items-center gap-3">
             <div className="relative flex items-center justify-center w-10 h-10 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
                <Hexagon className="w-6 h-6 text-yellow-500" />
@@ -87,7 +91,7 @@ export default function Layout() {
               Beekeeper
             </span>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-gray-400 hover:text-white">
+          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-muted hover:text-main">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -102,7 +106,7 @@ export default function Layout() {
                 `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
                     ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 shadow-[0_0_15px_rgba(234,179,8,0.1)]'
-                    : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+                    : 'text-muted hover:bg-white/5 hover:text-main'
                 }`
               }
             >
@@ -112,7 +116,15 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-yellow-500/10 space-y-2">
+        <div className="p-4 border-t border-theme space-y-2">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted hover:bg-white/5 hover:text-main transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            <span className="font-medium">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+          </button>
+
           {deferredPrompt && (
             <button
               onClick={handleInstallClick}
@@ -127,13 +139,13 @@ export default function Layout() {
               {user?.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+              <p className="text-sm font-medium text-main truncate">{user?.name}</p>
               <p className="text-xs text-yellow-500/70 capitalize truncate">{user?.role}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted hover:bg-red-500/10 hover:text-red-400 transition-colors"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Sair</span>
@@ -146,17 +158,17 @@ export default function Layout() {
         {/* Subtle background glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-yellow-500/5 blur-[120px] rounded-full pointer-events-none" />
         
-        <header className="h-16 border-b border-yellow-500/10 flex items-center justify-between px-4 lg:px-8 bg-[#141414]/80 backdrop-blur-md z-10 shrink-0">
+        <header className="h-16 border-b border-theme flex items-center justify-between px-4 lg:px-8 bg-card/80 backdrop-blur-md z-10 shrink-0">
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-gray-400 hover:text-white p-2 -ml-2">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-muted hover:text-main p-2 -ml-2">
               <Menu className="w-6 h-6" />
             </button>
-            <h1 className="text-lg lg:text-xl font-semibold text-white truncate">
+            <h1 className="text-lg lg:text-xl font-semibold text-main truncate">
               Controle de Estoque
             </h1>
           </div>
           <div className="flex items-center gap-4">
-             <span className="text-xs lg:text-sm text-gray-400 hidden sm:block">
+             <span className="text-xs lg:text-sm text-muted hidden sm:block">
                {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
              </span>
           </div>

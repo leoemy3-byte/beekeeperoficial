@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -15,7 +16,7 @@ function PrivateRoute({ children, requireAdmin = false }: { children: React.Reac
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-main flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-yellow-500/20 border-t-yellow-500 rounded-full animate-spin" />
       </div>
     );
@@ -34,28 +35,30 @@ function PrivateRoute({ children, requireAdmin = false }: { children: React.Reac
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-            <Route index element={<Dashboard />} />
-            <Route path="products" element={<Products />} />
-            <Route path="movements" element={<Movements />} />
-            <Route path="history" element={<History />} />
-            <Route path="reports" element={<Reports />} />
-            <Route 
-              path="users" 
-              element={
-                <PrivateRoute requireAdmin>
-                  <Users />
-                </PrivateRoute>
-              } 
-            />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            
+            <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<Products />} />
+              <Route path="movements" element={<Movements />} />
+              <Route path="history" element={<History />} />
+              <Route path="reports" element={<Reports />} />
+              <Route 
+                path="users" 
+                element={
+                  <PrivateRoute requireAdmin>
+                    <Users />
+                  </PrivateRoute>
+                } 
+              />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
