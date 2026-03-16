@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Hexagon, Lock, Mail, ArrowRight, UserPlus, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Login() {
-  const { loginWithGoogle, loginWithEmail, registerWithEmail } = useAuth();
+  const { user, loading: authLoading, loginWithGoogle, loginWithEmail, registerWithEmail } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,6 +14,12 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleGoogleLogin = async () => {
     try {

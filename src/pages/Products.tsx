@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Search, Edit2, Trash2, X, AlertCircle } from 'lucide-react';
@@ -38,23 +38,70 @@ export default function Products() {
     e.preventDefault();
     setError('');
     try {
+      const stockValue = Number(formData.stock);
       const productData = {
         ...formData,
         cost: Number(formData.cost),
         price: Number(formData.price),
-        stock: Number(formData.stock),
+        stock: stockValue,
         minStock: Number(formData.minStock),
         updatedAt: serverTimestamp()
       };
 
-      if (editingProduct) {
-        await updateDoc(doc(db, 'products', editingProduct.id), productData);
-      } else {
-        await addDoc(collection(db, 'products'), {
-          ...productData,
-          createdAt: serverTimestamp()
-        });
-      }
+      await runTransaction(db, async (transaction) => {
+        let productId: string;
+        let isNew = false;
+        let oldStock = 0;
+
+        if (editingProduct) {
+          productId = editingProduct.id;
+          const productDoc = await transaction.get(doc(db, 'products', productId));
+          if (productDoc.exists()) {
+            oldStock = productDoc.data().stock || 0;
+          }
+          transaction.update(doc(db, 'products', productId), productData);
+        } else {
+          const newProductRef = doc(collection(db, 'products'));
+          productId = newProductRef.id;
+          isNew = true;
+          transaction.set(newProductRef, {
+            ...productData,
+            createdAt: serverTimestamp()
+          });
+        }
+
+        // Create movement record if stock changed or it's a new product with stock
+        if (isNew && stockValue > 0) {
+          const movementRef = doc(collection(db, 'movements'));
+          transaction.set(movementRef, {
+            productId,
+            productName: formData.name,
+            type: 'in',
+            quantity: stockValue,
+            reason: 'Estoque inicial',
+            userEmail: user?.email,
+            userName: user?.name,
+            date: new Date().toISOString(),
+            notes: 'Criado junto com o produto'
+          });
+        } else if (!isNew && stockValue !== oldStock) {
+          const movementRef = doc(collection(db, 'movements'));
+          const diff = stockValue - oldStock;
+          transaction.set(movementRef, {
+            productId,
+            productName: formData.name,
+            type: 'adjust',
+            direction: diff > 0 ? 'in' : 'out',
+            quantity: Math.abs(diff),
+            reason: 'Ajuste manual no cadastro',
+            userEmail: user?.email,
+            userName: user?.name,
+            date: new Date().toISOString(),
+            notes: `Estoque alterado de ${oldStock} para ${stockValue}`
+          });
+        }
+      });
+
       closeModal();
     } catch (err) {
       setError('Erro ao salvar produto. Verifique os dados.');

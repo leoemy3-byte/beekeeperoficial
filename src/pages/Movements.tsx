@@ -92,10 +92,15 @@ export default function Movements() {
         });
 
         // Create movement record
+        const direction = formData.type === 'adjust' 
+          ? (formData.quantity > currentStock ? 'in' : 'out') 
+          : formData.type;
+
         transaction.set(movementRef, {
           productId: formData.productId,
           productName: productDoc.data().name,
           type: formData.type,
+          direction: direction,
           quantity: formData.type === 'adjust' ? Math.abs(formData.quantity - currentStock) : formData.quantity,
           reason: formData.reason || (formData.type === 'adjust' ? 'Ajuste de inventário' : ''),
           userEmail: user?.email,

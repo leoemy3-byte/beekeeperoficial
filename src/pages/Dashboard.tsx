@@ -68,16 +68,18 @@ export default function Dashboard() {
         if (recent.length < 5) recent.push({ id: doc.id, ...data });
 
         if (isSameMonth(date, now)) {
-          if (data.type === 'in') entries += data.quantity;
-          if (data.type === 'out') exits += data.quantity;
+          const direction = data.direction || data.type;
+          if (direction === 'in') entries += data.quantity;
+          if (direction === 'out') exits += data.quantity;
         }
 
         // Aggregate for chart
         const dayStr = format(date, 'yyyy-MM-dd');
         const dayData = last7Days.find(d => d.rawDate === dayStr);
         if (dayData) {
-          if (data.type === 'in') dayData.entradas += data.quantity;
-          if (data.type === 'out') dayData.saidas += data.quantity;
+          const direction = data.direction || data.type;
+          if (direction === 'in') dayData.entradas += data.quantity;
+          if (direction === 'out') dayData.saidas += data.quantity;
         }
       });
 

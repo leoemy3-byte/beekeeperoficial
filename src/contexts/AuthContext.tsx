@@ -43,11 +43,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (firebaseUser) {
+        setLoading(true); // Ensure loading is true when auth state changes to a user
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         
         unsubscribeDoc = onSnapshot(userDocRef, async (snapshot) => {
           if (snapshot.exists()) {
             setUser({ uid: firebaseUser.uid, ...snapshot.data() } as UserData);
+            setLoading(false);
           } else {
             // If this is the first user (or specific email), make them admin
             const isFirstAdmin = firebaseUser.email === 'leoemy3@gmail.com';
@@ -58,15 +60,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: isFirstAdmin ? 'admin' : 'operator',
             };
             // Save new user to Firestore
-            await setDoc(userDocRef, {
-              email: userData.email,
-              name: userData.name,
-              role: userData.role,
-              createdAt: new Date().toISOString(),
-            });
-            // The snapshot listener will trigger again and set the user
+            try {
+              await setDoc(userDocRef, {
+                email: userData.email,
+                name: userData.name,
+                role: userData.role,
+                createdAt: new Date().toISOString(),
+              });
+              // The snapshot listener will trigger again when the doc is created
+            } catch (error) {
+              console.error("Error creating user document:", error);
+              setLoading(false);
+            }
           }
-          setLoading(false);
         });
       } else {
         setUser(null);
