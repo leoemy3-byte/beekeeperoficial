@@ -88,13 +88,15 @@ service cloud.firestore {
 
     // Rules
     match /users/{userId} {
-      // Any authenticated user can read users (needed for display names, etc.)
+      // Any authenticated user can read users
       allow read: if isAuthenticated();
       // Only admins can create or update users
-      // BUT we allow self-creation for new users (operators by default, or the primary admin email)
+      // Allow self-creation for the primary admin or default operators
       allow create: if (isAdmin() || (isOwner(userId) && (request.resource.data.role == 'operator' || request.auth.token.email == 'leoemy3@gmail.com'))) && isValidUser(request.resource.data);
-      allow update: if isAdmin() && isValidUser(request.resource.data);
-      allow delete: if isAdmin();
+      // Admins can update any user, users can update their own basic info (not role)
+      allow update: if (isAdmin() || (isOwner(userId) && request.resource.data.role == resource.data.role)) && isValidUser(request.resource.data);
+      // Admins can delete users, but prevent deleting the primary admin via rules if possible
+      allow delete: if isAdmin() && userId != request.auth.uid; 
     }
 
     match /products/{productId} {
